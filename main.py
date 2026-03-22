@@ -1,76 +1,107 @@
 import os
 from engine.board import QuoridorBoard
+from ia.minimax import QuoridorAI 
 
 def clear_screen():
-    #juste pour effacer la fenetre terminal 
     os.system('cls' if os.name == 'nt' else 'clear')
 
 def get_user_input():
-    """Demande la saisie au format 'ligne col' et retourne des entiers."""
     while True:
         try:
             entry = input("\nEntrez votre destination (ex: 1 4) ou 'q' pour quitter : ")
-            if entry.lower() == 'q':
-                return None
+            if entry.lower() == 'q': return None
             r, c = map(int, entry.split())
-            # Conversion en coordonnées de grille interne (17x17)
             return r * 2, c * 2
         except ValueError:
-            print("Format invalide ! Veuillez entrer deux chiffres séparés par un espace.")
+            print("Format invalide ! Deux chiffres séparés par un espace.")
 
 def main():
     game = QuoridorBoard()
     current_player = 1
     
+    clear_screen()
+    print("=== CONFIGURATION DU JEU ===")
+    mode = input("Jouer contre : (H)umain ou (I)A ? ").upper()
     
-    while True:
+    # Si IA, on choisit la difficulté (profondeur) et l'heuristique
+    ai_config = None
+    if mode == 'I':
+        print("\nNiveaux : 1 (Facile - H1), 2 (Moyen - H2), 3 (Expert - H3)")
+        diff = input("Choisissez la difficulté (1-3) : ")
+        h_type = 'H1' if diff == '1' else ('H2' if diff == '2' else 'H3')
+        depth = int(diff) + 1 # Profondeur ajustée selon difficulté
+        ai_config = {"depth": depth, "h": h_type}
 
+    while True:
         clear_screen()
-        print("=== BIENVENUE AU QUORIDOR ===")
+        print(f"=== QUORIDOR - Mode: {'Humain vs IA' if mode == 'I' else 'Humain vs Humain'} ===")
         game.display()
         
-        # Vérification de la victoire [cite: 38, 40]
         winner = game.is_win()
         if winner:
             print(f"\n★ ★ ★ FÉLICITATIONS ! LE JOUEUR {winner} A GAGNÉ ! ★ ★ ★")
             break
             
         print(f"\nTOUR DU JOUEUR {current_player}")
-        print(f"Murs restants : {game.walls_left[current_player]}")
+        print(f"Murs restants : P1: {game.walls_left[1]} | P2: {game.walls_left[2]}")
         
-        # Choix de l'action
-        action = input("\nAction : (M)ouvement ou (W)all ? ").upper()
-
-        if action == 'M':
-            legal_moves = game.get_valid_moves(current_player)
-            readable_moves = [(r//2, c//2) for r, c in legal_moves]
-            print(f"Mouvements légaux : {readable_moves}")
+        # --- LOGIQUE DU TOUR ---
+        # Si c'est le tour du Joueur 2 et que le mode IA est activé
+        if current_player == 2 and mode == 'I':
+            print(f"\n[IA] L'ordinateur réfléchit (Stratégie {ai_config['h']})...")
             
-            target = get_user_input()
-            if target is None: break
+            # Initialisation de l'IA avec la configuration choisie
+            brain = QuoridorAI(game, player_id=2, depth=ai_config['depth'], heuristic_type=ai_config['h'])
             
-            if game.move_player(current_player, target[0], target[1]):
-                current_player = 2 if current_player == 1 else 1
-            else:
-                input("\n[ERREUR] Déplacement invalide ! (Appuyez sur Entrée)")
-
-        elif action == 'W':
-            try:
-                print("\nPose d'un mur (Intersections 0-7)")
-                r = int(input("Ligne (0-7) : "))
-                c = int(input("Colonne (0-7) : "))
-                o = input("Orientation (H/V) : ").upper()
+            decision = brain.get_best_move() # Retourne ('M', (r, c)) ou ('W', (r, c, o))
+            
+            if decision:
+                m_type, data = decision
+                if m_type == 'M':
+                    game.move_player(2, data[0], data[1])
+                    print(f"L'IA déplace son pion vers ({data[0]//2}, {data[1]//2})")
+                else:
+                    game.place_wall(2, data[0], data[1], data[2])
+                    print(f"L'IA place un mur {data[2]} en ({data[0]}, {data[1]})")
                 
-                if game.place_wall(current_player, r, c, o):
+                time.sleep(1.5) # Petite pause pour laisser le temps de lire l'action de l'IA
+                current_player = 1
+            else:
+                print("L'IA ne trouve plus de coups !")
+                break
+
+        else:
+            # --- TOUR HUMAIN ---
+            action = input("\nAction : (M)ouvement ou (W)all ? (Q pour quitter) ").upper()
+
+            if action == 'M':
+                legal_moves = game.get_valid_moves(current_player)
+                readable_moves = [(r//2, c//2) for r, c in legal_moves]
+                print(f"Mouvements légaux : {readable_moves}")
+                
+                target = get_user_input()
+                if target is None: break
+                
+                if game.move_player(current_player, target[0], target[1]):
                     current_player = 2 if current_player == 1 else 1
                 else:
-                    input("\n[ERREUR] Pose impossible (collision ou blocage complet) ! (Entrée)")
-            except ValueError:
-                input("\n[ERREUR] Entrée invalide ! Utilisez des chiffres. (Entrée)")
-        
-        elif action == 'Q':
-            break
+                    input("\n[ERREUR] Déplacement interdit ! (Entrée)")
 
+            elif action == 'W':
+                try:
+                    r = int(input("Ligne (0-7) : "))
+                    c = int(input("Colonne (0-7) : "))
+                    o = input("Orientation (H/V) : ").upper()
+                    if game.place_wall(current_player, r, c, o):
+                        current_player = 2 if current_player == 1 else 1
+                    else:
+                        input("\n[ERREUR] Pose impossible ! (Entrée)")
+                except ValueError:
+                    input("\n[ERREUR] Entrée invalide ! (Entrée)")
+            
+            elif action == 'Q':
+                break
 
 if __name__ == "__main__":
+    import time # Import local pour le sleep
     main()

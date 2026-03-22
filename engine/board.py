@@ -184,4 +184,56 @@ class QuoridorBoard:
             print("Action interdite : vous ne pouvez pas bloquer tous les accès !")
             return False
         
-    
+    def evaluate(self, type='H2'):
+        if type == 'H1':
+            # Simple différence de progression (Lignes)
+            return (self.player1_pos[0]) - (16 - self.player2_pos[0])
+        
+        elif type == 'H2':
+            # Différence de plus court chemin (BFS)
+            return self.get_shortest_path_length(1) - self.get_shortest_path_length(2)
+            
+        elif type == 'H3':
+            # BFS + Bonus si on a plus de murs que l'adversaire
+            base = self.get_shortest_path_length(1) - self.get_shortest_path_length(2)
+            wall_bonus = (self.walls_left[2] - self.walls_left[1]) * 1.5
+            return base + wall_bonus
+        
+    def get_shortest_path_length(self, player_id):
+        """
+        Calcule la distance réelle (BFS) vers la ligne d'arrivée.
+        Indispensable pour l'heuristique H2 et H3.
+        """
+        # 1. Définir le point de départ et la ligne d'arrivée
+        if player_id == 1:
+            start = self.player1_pos
+            goal_row = 16  # Ligne tout en bas
+        else:
+            start = self.player2_pos
+            goal_row = 0   # Ligne tout en haut
+
+        # 2. Initialisation du BFS
+        queue = deque([(tuple(start), 0)]) # (position, distance)
+        visited = {tuple(start)}
+
+        while queue:
+            (r, c), dist = queue.popleft()
+
+            # Si on atteint n'importe quelle case de la ligne d'arrivée
+            if r == goal_row:
+                return dist // 2 # Divisé par 2 car on compte les cases, pas les indices de grille
+
+            # 3. Explorer les voisins (H, B, G, D)
+            # On se déplace de 2 cases pour sauter les indices des murs
+            for dr, dc in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
+                nr, nc = r + dr, c + dc
+                
+                # Vérifier si on reste sur le plateau
+                if 0 <= nr <= 16 and 0 <= nc <= 16:
+                    # Vérifier s'il y a un MUR entre la position actuelle et la suivante
+                    wall_r, wall_c = r + dr // 2, c + dc // 2
+                    if self.grid[wall_r][wall_c] == ' ' and (nr, nc) not in visited:
+                        visited.add((nr, nc))
+                        queue.append(((nr, nc), dist + 2))
+
+        return 999 # Aucun chemin trouvé (ne devrait pas arriver si les murs sont bien posés)
