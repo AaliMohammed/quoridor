@@ -35,7 +35,7 @@ class QuoridorAI:
                 alpha = max(alpha, best_score)
 
         execution_time = time.time() - start_time
-        # Ces prints sont cruciaux pour ton analyse expérimentale
+        # Ces prints sont cruciaux pour l'analyse expérimentale
         print(f"--- [Rapport IA] ---")
         print(f"Heuristique : {self.heuristic_type} | Profondeur : {self.depth}")
         print(f"Nœuds explorés : {self.nodes_explored}")
@@ -95,7 +95,7 @@ class QuoridorAI:
         
         if board.walls_left[p_id] > 0:
             # On limite la recherche des murs pour respecter les contraintes de temps
-            # du sujet (Analyse expérimentale)
+            # du sujet Analyse expérimentale
             for r in range(0, 8, 2):
                 for c in range(0, 8, 2):
                     for o in ['H', 'V']:

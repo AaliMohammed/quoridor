@@ -19,7 +19,7 @@ def run_experiment(depth, h_type):
         "time": end_time - start_time
     }
 
-# Génération des données pour ton tableau S6
+# Génération des données pour le tableau
 results = []
 for d in [1, 2, 3]: # Test de différentes profondeurs
     for h in ['H1', 'H2', 'H3']: # Test des 3 heuristiques
@@ -27,7 +27,7 @@ for d in [1, 2, 3]: # Test de différentes profondeurs
         res = run_experiment(d, h)
         results.append(res)
 
-# Sauvegarde en CSV pour ton rapport
+# Sauvegarde en CSV pour le rapport
 keys = results[0].keys()
 with open('analyse_ia.csv', 'w', newline='') as f:
     dict_writer = csv.DictWriter(f, keys)
