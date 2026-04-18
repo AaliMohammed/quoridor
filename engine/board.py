@@ -1,7 +1,7 @@
 from collections import deque
 
 class QuoridorBoard:
-    def __init__(self):
+    def __init__(self, verbose=True):
         #Taille 17x17 pour inclure les espaces pour les murs 
         self.size = 17
         self.grid = [[' ' for _ in range(self.size)] for _ in range(self.size)]
@@ -12,6 +12,7 @@ class QuoridorBoard:
 
         #Stock de murs pour chaque joueur
         self.walls_left = {1:10,2:10}
+        self.verbose = verbose
 
         #initialisation des pions sur la grille
         self.grid[self.player1_pos[0]][self.player1_pos[1]] = '1'
@@ -83,14 +84,24 @@ class QuoridorBoard:
                     # 3- Gérer la rencontre avec l'adversaire (Saut)
                     if [nr, nc] == opponent_pos:
                         snr, snc = nr + dr, nc + dc
-                        # Vérifier si le saut reste dans la grille
+                        straight_jump_done = False
+                        # Tentative de saut droit
                         if 0 <= snr < self.size and 0 <= snc < self.size:
                             swr, swc = nr + dr // 2, nc + dc // 2
-                            # Vérifier s'il n'y a pas de mur derrière l'adversaire
                             if self.grid[swr][swc] not in ['H', 'V']:
                                 moves.append((snr, snc))
+                                straight_jump_done = True
+                        # Si le saut droit est impossible (mur ou bord), saut diagonal
+                        if not straight_jump_done:
+                            perp_dirs = [(0, -2), (0, 2)] if dr != 0 else [(-2, 0), (2, 0)]
+                            for pdr, pdc in perp_dirs:
+                                pnr, pnc = nr + pdr, nc + pdc
+                                if 0 <= pnr < self.size and 0 <= pnc < self.size:
+                                    pwr, pwc = nr + pdr // 2, nc + pdc // 2
+                                    if self.grid[pwr][pwc] not in ['H', 'V']:
+                                        moves.append((pnr, pnc))
                     else:
-                        moves.append((nr, nc)) 
+                        moves.append((nr, nc))
         return moves
 
     def move_player(self, player_id, target_r, target_c):
@@ -134,10 +145,10 @@ class QuoridorBoard:
             for dr, dc in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
                 nr, nc = r + dr, c + dc 
 
-                if 0 <= nr <= 17 and 0 <= nc <=17:
+                if 0 <= nr < self.size and 0 <= nc < self.size:
                     #verifier les murs
                     wr, wc = r + dr//2, c + dc//2
-                    if self.grid[wr][wc] not in ['H','v'] and (nr,nc) not in visited:
+                    if self.grid[wr][wc] not in ['H','V'] and (nr,nc) not in visited:
                         visited.add((nr,nc))
                         queue.append((nr,nc))
         return False
@@ -149,7 +160,8 @@ class QuoridorBoard:
         """
         #verification s'il reste des murs pour le joueur
         if self.walls_left[player_id] <= 0:
-            print("plus de murs disponibles !!!")
+            if self.verbose:
+                print("plus de murs disponibles !!!")
             return False
 
         #conversion on coordonnees internes(impaires)
@@ -181,23 +193,9 @@ class QuoridorBoard:
                 self.grid[ir][ic-1] = self.grid[ir][ic+1] = self.grid[ir][ic] = ' '
             else:
                 self.grid[ir-1][ic] = self.grid[ir+1][ic] = self.grid[ir][ic] = ' '
-            print("Action interdite : vous ne pouvez pas bloquer tous les accès !")
+            if self.verbose:
+                print("Action interdite : vous ne pouvez pas bloquer tous les accès !")
             return False
-        
-    def evaluate(self, type='H2'):
-        if type == 'H1':
-            # Simple différence de progression (Lignes)
-            return (self.player1_pos[0]) - (16 - self.player2_pos[0])
-        
-        elif type == 'H2':
-            # Différence de plus court chemin (BFS)
-            return self.get_shortest_path_length(1) - self.get_shortest_path_length(2)
-            
-        elif type == 'H3':
-            # BFS + Bonus si on a plus de murs que l'adversaire
-            base = self.get_shortest_path_length(1) - self.get_shortest_path_length(2)
-            wall_bonus = (self.walls_left[2] - self.walls_left[1]) * 1.5
-            return base + wall_bonus
         
     def get_shortest_path_length(self, player_id):
         """

@@ -1,6 +1,7 @@
 import os
+import time
 from engine.board import QuoridorBoard
-from ia.minimax import QuoridorAI 
+from ia.minimax import QuoridorAI
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -26,10 +27,17 @@ def main():
     # Si IA, on choisit la difficulté (profondeur) et l'heuristique
     ai_config = None
     if mode == 'I':
-        print("\nNiveaux : 1 (Facile - H1), 2 (Moyen - H2), 3 (Expert - H3)")
-        diff = input("Choisissez la difficulté (1-3) : ")
-        h_type = 'H1' if diff == '1' else ('H2' if diff == '2' else 'H3')
-        depth = int(diff) + 1 # Profondeur ajustée selon difficulté
+        print("\nNiveaux :")
+        print("  1 - Facile  (H1 : progression lineaire,  profondeur 1, ~0.2s/coup)")
+        print("  2 - Moyen   (H2 : BFS chemin court,      profondeur 2, ~0.7s/coup)")
+        print("  3 - Expert  (H3 : BFS + bonus murs,      profondeur 2, ~0.5s/coup)")
+        diff = input("Choisissez la difficulte (1-3) : ")
+        if diff == '1':
+            h_type, depth = 'H1', 1
+        elif diff == '2':
+            h_type, depth = 'H2', 2
+        else:
+            h_type, depth = 'H3', 2
         ai_config = {"depth": depth, "h": h_type}
 
     while True:
@@ -103,5 +111,4 @@ def main():
                 break
 
 if __name__ == "__main__":
-    import time # Import local pour le sleep
     main()

@@ -1,0 +1,4 @@
+pair,ia1,ia2,wins_IA-H1,wins_IA-H2,draws,winrate_IA-H1_%,winrate_IA-H2_%,wins_first_IA-H1,wins_first_IA-H2,wins_IA-H3,winrate_IA-H3_%,wins_first_IA-H3
+IA-H1 vs IA-H2,IA-H1,IA-H2,0,50,0,0.0,100.0,0,25,,,
+IA-H1 vs IA-H3,IA-H1,IA-H3,0,,0,0.0,,0,,50,100.0,25
+IA-H2 vs IA-H3,IA-H2,IA-H3,,25,0,,50.0,,25,25,50.0,25
